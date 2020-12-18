@@ -1,22 +1,7 @@
-# from pprint import pprint
 from typing import List
 from datetime import datetime
 
 from mbta import get_routes, get_stops, get_predictions
-
-# AC
-#
-# 1. Your program should prompt users to select from a list of routes that
-#    service only Light and Heavy Rail trains.
-#
-# 2. Your program should display a listing of stops related to the selected
-#    route and prompt the user to select a stop
-#
-# 3. Your program should display a list of route directions and prompt the
-#    user to select a direction
-#
-# 4. Your program should display the next predicted departure time for a train
-#    based on the previously selected inputs
 
 
 # Without an api key, all requests are limited to 20/min. With an api key that
@@ -24,8 +9,12 @@ from mbta import get_routes, get_stops, get_predictions
 # TODO: Rate limit handling
 
 
-def cli_choose_route(routes):
+def choose_route(routes):
     """ Print the available routes and prompts the user to select one
+
+    :param list routes: A list of route dicts as returned by the /routes/
+        endpoint
+    :returns dict: An individual route dictionary from the list
     """
     print('Available Routes')
     for index, route in enumerate(routes):
@@ -38,13 +27,16 @@ def cli_choose_route(routes):
             print(f'\t{direction}: {destination_names[index]}')
 
     prompt = 'Which route would you like? Type the route index:'
-    choice = cli_get_choice(prompt, routes)
+    choice = get_choice(prompt, routes)
 
     return routes[choice]
 
 
-def cli_choose_stop(stops):
+def choose_stop(stops):
     """ Print the available stops and prompts the user to select one
+
+    :param list stops: A list of stop dicts as returned by the /stops/ endpoint
+    :returns dict: An individual stop dictionary from the list
     """
     print('Available Stops')
     for index, stop in enumerate(stops):
@@ -54,12 +46,15 @@ def cli_choose_stop(stops):
         print('\tAddress:', attributes.get('address'), '----')
 
     prompt = 'Which stop would you like? Type the stop index:'
-    choice = cli_get_choice(prompt, stops)
+    choice = get_choice(prompt, stops)
     return stops[choice]
 
 
-def cli_choose_direction(route):
+def choose_direction(route):
     """ Prints the route directions and prompts the user to select one
+
+    :param dict route: A route dictionary to pull the directions from
+    :returns int: An index representing the chosen direction
     """
     print('Choose a direction:')
 
@@ -69,16 +64,19 @@ def cli_choose_direction(route):
         print(f'{index}: {direction} - {destination_names[index]}')
 
     prompt = 'Which direction would you like to go? Type the index here:'
-    return cli_get_choice(prompt, destination_names)
+    return get_choice(prompt, destination_names)
 
 
-def cli_get_choice(prompt: str, items: List):
+def get_choice(prompt: str, items: List):
     """ Handle user input for selecting an item by its index
+
+    :param str prompt: The text to present to the user before entering text
+    :param list items: A list of options. The chosen index must be in this list
+    :returns int: The index of the user chosen item
     """
     choice = None
     while True:
-        # choice = input('Which one would you like? Type the index: ')
-        choice = input(f'\n{prompt} ')
+        choice = get_input(f'\n{prompt} ')
 
         try:
             choice = int(choice)
@@ -97,34 +95,57 @@ def cli_get_choice(prompt: str, items: List):
     return choice
 
 
-def cli_show_prediction(predictions):
+def get_input(prompt):
+    """Shallow wrapper around input() for unit testing
+
+    :param str prompt: The text to present to the user before entering text
+    :returns str: The text the user entered
+    """
+    return input(prompt)
+
+
+def show_prediction(predictions):
+    """Prints the first prediction to the console. These predictions are
+    already sorted.
+
+    :param list predictions: A list of predictions returned from the api
+    """
     if not len(predictions):
-        print('Could not find any predicted departure times for those '
+        print('\nCould not find any predicted departure times for those '
               'choices.')
 
     attributes = predictions[0]['attributes']
+
+    if not attributes['departure_time']:
+        print('\nThere are no departures from this stop in that direction.')
+        return
+
     departure_time = datetime.fromisoformat(attributes['departure_time'])
-    print('Next predicted departure time:', departure_time)
+    print('\nNext predicted departure time:', departure_time)
 
 
 def cli():
+    """Main command line interface
+    """
     # Get a list of routes for Light Rail (0) and Heavy Rail (1)
     routes = get_routes(['0', '1'])
 
-    route = cli_choose_route(routes)
-    # print('route', route)
+    # User picks a route
+    route = choose_route(routes)
 
+    # Get a list of stops for the chosen route
     stops = get_stops(route)
 
-    stop = cli_choose_stop(stops)
-    # print('stop', stop)
+    # User picks a stop
+    stop = choose_stop(stops)
 
-    direction_id = cli_choose_direction(route)
-    # print('direction_id', direction_id)
+    # User picks a direction
+    direction_id = choose_direction(route)
 
+    # Pull predictions from the api
     predictions = get_predictions(route, stop, direction_id)
 
-    cli_show_prediction(predictions)
+    show_prediction(predictions)
 
 
 if __name__ == '__main__':
