@@ -17,18 +17,23 @@ The recommended way to run this is inside a virtual environment. You can setup t
 ```bash
     python3 -m venv venv
     source venv/bin/activate
-    pip install -r requirements.txt
+```
+
+Then install the script using pip:
+```bash
+    pip install -e .[dev]
 ```
 
 ## Running the CLI
 ```bash
-    python3 cli.py
+    mbta-predict
 ```
 
 ## Running the tests
 ```bash
     pytest tests
 ```
+
 If developing on the app, you can run pytest-watch to keep running the tests when changes are detected:
 ```bash
     pytest-watch tests

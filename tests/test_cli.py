@@ -1,8 +1,9 @@
+import builtins
 from unittest.mock import Mock
 
 import pytest
 
-import cli
+from mbta_predict import cli
 
 
 @pytest.fixture
@@ -118,7 +119,7 @@ def test_get_choice_doesnt_accept_non_ints(mock_get_input):
 
 
 def test_get_choice_only_accepts_range(mock_get_input):
-    mock_get_input.side_effect = ['42', '0']
+    mock_get_input.side_effect = ['3', '0']
     cli.get_choice('foo', ['a', 'b', 'c'])
     assert mock_get_input.call_count == 2
 
@@ -127,6 +128,34 @@ def test_get_choice_returns_input(mock_get_input):
     mock_get_input.side_effect = ['0']
     result = cli.get_choice('foo', ['a', 'b', 'c'])
     assert result == 0
+
+
+def test_show_prediction_warns_no_predictions(monkeypatch):
+    mock_print = Mock()
+    monkeypatch.setattr(builtins, 'print', mock_print)
+    cli.show_prediction([])
+    mock_print.assert_called_once_with(
+        '\nCould not find any predicted departure times for those choices.'
+    )
+
+
+def test_show_prediction_warns_no_departures(monkeypatch):
+    mock_print = Mock()
+    monkeypatch.setattr(builtins, 'print', mock_print)
+    cli.show_prediction([{'attributes': {'departure_time': None}}])
+    mock_print.assert_called_once_with(
+        '\nThere are no departures from this stop in that direction.'
+    )
+
+
+def test_show_prediction_shows_departure(monkeypatch):
+    mock_print = Mock()
+    monkeypatch.setattr(builtins, 'print', mock_print)
+    cli.show_prediction([{'attributes': {'departure_time': '2020-12-17T01:01:00-05:00'}}])
+    mock_print.assert_called_once_with(
+        '\nNext predicted departure time:',
+        '12/17/2020, 01:01 AM UTC-05:00'
+    )
 
 
 def test_cli_calls_get_routes(mock_cli_funcs, mock_mbta):

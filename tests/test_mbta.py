@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-import mbta
+from mbta_predict import mbta
 
 
 @pytest.fixture

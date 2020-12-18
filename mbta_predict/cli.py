@@ -1,12 +1,13 @@
 from typing import List
 from datetime import datetime
 
-from mbta import get_routes, get_stops, get_predictions
+from mbta_predict.mbta import get_routes, get_stops, get_predictions
 
 
 # Without an api key, all requests are limited to 20/min. With an api key that
 #  limit is 1000/min or above
-# TODO: Rate limit handling
+# TODO: Rate limit handling - Rate limit stats are in response headers
+# TODO: API key for higher rate limits
 
 
 def choose_route(routes):
@@ -85,7 +86,7 @@ def get_choice(prompt: str, items: List):
                   'Please try again.')
             continue
 
-        if choice >= len(items):
+        if choice >= len(items) or choice < 0:
             print('You must enter the index of one of the above items. '
                   'Please try again.')
             continue
@@ -106,13 +107,14 @@ def get_input(prompt):
 
 def show_prediction(predictions):
     """Prints the first prediction to the console. These predictions are
-    already sorted.
+    already sorted by departure time.
 
     :param list predictions: A list of predictions returned from the api
     """
     if not len(predictions):
         print('\nCould not find any predicted departure times for those '
               'choices.')
+        return
 
     attributes = predictions[0]['attributes']
 
@@ -121,7 +123,8 @@ def show_prediction(predictions):
         return
 
     departure_time = datetime.fromisoformat(attributes['departure_time'])
-    print('\nNext predicted departure time:', departure_time)
+    human_time = departure_time.strftime("%m/%d/%Y, %I:%M %p %Z")
+    print('\nNext predicted departure time:', human_time)
 
 
 def cli():
